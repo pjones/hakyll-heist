@@ -16,11 +16,11 @@ executable site
   build-depends: base
                , hakyll
                , heist
-               , errors
-               , text
-               , bytestring
-               , mtl
-               , transformers
                , blaze-builder
+               , bytestring
+               , errors
+               , mtl
+               , text
+               , transformers
+               , utf8-string
                , xmlhtml
-

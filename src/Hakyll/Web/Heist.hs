@@ -28,6 +28,7 @@ import           Control.Monad.Trans (lift)
 import           Data.ByteString (ByteString)
 import           Data.Monoid ((<>))
 import           Text.XmlHtml (elementAttrs)
+import           Data.ByteString.UTF8 (toString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 
@@ -71,7 +72,7 @@ applyTemplate state name context item = do
   case C.renderTemplate state name of
     Nothing    -> undefined
     Just (r,m) -> do builder <- runReaderT r (context, item)
-                     let body = B.unpack $ toByteString builder
+                     let body = toString $ toByteString builder
                      return $ itemSetBody body item
 
 --------------------------------------------------------------------------------
