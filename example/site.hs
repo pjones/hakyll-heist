@@ -30,28 +30,28 @@ main =
                >>= H.applyTemplate heist "post" postCtx
                >>= relativizeUrls
 
-       -- create ["archive.html"] $ do
-       --     route idRoute
-       --     compile $ do
-       --         let archiveCtx =
-       --                 field "posts" (\_ -> postList recentFirst) `mappend`
-       --                 constField "title" "Archives"              `mappend`
-       --                 defaultContext
+       create ["archive.html"] $ do
+           route idRoute
+           compile $ do
+               let archiveCtx =
+                       field "posts" (\_ -> postList heist recentFirst) `mappend`
+                       constField "title" "Archives"                    `mappend`
+                       defaultContext
 
-       --         makeItem ""
-       --             >>= H.applyTemplate heist "achive" archiveCtx
-       --             >>= H.applyTemplate heist "basic"  archiveCtx
-       --             >>= relativizeUrls
+               makeItem ""
+                   >>= H.applyTemplate heist "archive" archiveCtx
+                   >>= relativizeUrls
 
-       -- match "index.html" $ do
-       --     route idRoute
-       --     compile $ do
-       --         let indexCtx = field "posts" $ \_ -> postList (take 3 . recentFirst)
+       match "index.html" $ do
+           route idRoute
+           compile $ do
+               let indexCtx = field "posts" $ \_ -> postList heist top3
+                   top3 = take 3 . recentFirst
 
-       --         getResourceBody
-       --             >>= applyAsTemplate indexCtx
-       --             >>= H.applyTemplate heist "basic" postCtx
-       --             >>= relativizeUrls
+               getResourceBody
+                   >>= applyAsTemplate indexCtx
+                   >>= H.applyTemplate heist "basic" postCtx
+                   >>= relativizeUrls
 
 --------------------------------------------------------------------------------
 postCtx :: Context String
@@ -59,11 +59,8 @@ postCtx =
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
 
-
 --------------------------------------------------------------------------------
-postList :: ([Item String] -> [Item String]) -> Compiler String
-postList sortFilter = do
-    posts   <- sortFilter <$> loadAll "posts/*"
-    itemTpl <- loadBody "templates/post-item.html"
-    list    <- applyTemplateList itemTpl postCtx posts
-    return list
+postList :: H.State String -> ([Item String] -> [Item String]) -> Compiler String
+postList heist sortFilter = do
+    posts <- sortFilter <$> loadAll "posts/*"
+    H.applyTemplateList heist "post-item" postCtx posts

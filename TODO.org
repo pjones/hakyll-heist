@@ -1,0 +1,10 @@
+#+title: Hakyll-Heist To-do List
+
+* Before First Release
+** TODO Investigate UTF-8 issues
+   - Make sure pages with UTF-8 look exactly like they do in a normal
+     Hakyll site.
+** TODO Ensure post URLs show up in the HTML
+   - Heist binds don't seem to be calling the hakyll splice, and so
+     the attribute substitutions in templates/post-item.tpl isn't
+     rendering the href attribute in the 'a' tags.
