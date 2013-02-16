@@ -61,7 +61,8 @@ loadHeist baseDir splices = do
     tState <- runEitherT $ do
         templates <- loadTemplates baseDir
         let splices' = [("hakyll", hakyllSplice)] ++ splices
-            hc = HeistConfig [] defaultLoadTimeSplices splices' [] templates
+            attrs = [("url", urlAttrSplice)]
+            hc = HeistConfig [] defaultLoadTimeSplices splices' attrs templates
         initHeist hc
     either (error . concat) return tState
 
@@ -126,3 +127,13 @@ hakyllSplice = do
           Just f  -> liftStr $ context' $ T.unpack f
     where fieldError = "The `hakyll' splice is missing the `field' attribute"
           liftStr s  = lift $ lift $ liftM T.pack s
+
+--------------------------------------------------------------------------------
+-- Attribute splice: changes a bare @url@ attribute to a complete
+-- @href@ attribute using the URL from the current 'Context'.
+urlAttrSplice :: AttrSplice (SpliceT a)
+urlAttrSplice _ = do
+  (context, item) <- lift ask
+  let url = unContext (context <> missingField) "url" item
+  val <- lift $ lift $ liftM T.pack url
+  return $ ("href", val) : []
