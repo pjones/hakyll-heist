@@ -1,0 +1,26 @@
+name:          example
+version:       0.1.0.0
+synopsis:      Exmple usage of the hakyll-heist package.
+license:       BSD3
+license-file:  ../LICENSE
+author:        Peter Jones <pjones@pmade.com>
+maintainer:    Peter Jones <pjones@pmade.com>
+copyright:     Copyright (C) 2013 Peter Jones
+category:      Web
+build-type:    Simple
+cabal-version: >=1.8
+
+executable site
+  main-is: site.hs
+  hs-source-dirs: ../src ./
+  build-depends: base
+               , hakyll
+               , heist
+               , errors
+               , text
+               , bytestring
+               , mtl
+               , transformers
+               , blaze-builder
+               , xmlhtml
+
