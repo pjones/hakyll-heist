@@ -1,7 +1,8 @@
 #+title: Hakyll-Heist To-do List
 
-* Before First Release
-** TODO Investigate UTF-8 issues
+* Before First Release                                              :ARCHIVE:
+** DONE Investigate UTF-8 issues
+   CLOSED: [2013-02-18 Mon 09:47]
    - Make sure pages with UTF-8 look exactly like they do in a normal
      Hakyll site.
 ** DONE Ensure post URLs show up in the HTML

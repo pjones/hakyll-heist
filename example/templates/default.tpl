@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>My Hakyll (Heist) Blog - <hakyll field="title"/></title>
-    <link rel="stylesheet" type="text/css" href="/css/default.css" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="/css/default.css"/>
   </head>
   <body>
     <div id="header">
