@@ -54,14 +54,18 @@ type State   a = HeistState (SpliceT a)
 -- | Load all of the templates from the given directory and return an
 -- initialized 'HeistState' using the given splices (in addition to
 -- the default splices and the @hakyll@ splice).
-loadHeist :: FilePath -- ^ Directory containing the templates.
-          -> [(T.Text, C.Splice (SpliceT a))] -- ^ List of Heist slices.
+loadHeist :: FilePath
+          -- ^ Directory containing the templates.
+          -> [(T.Text, C.Splice (SpliceT a))]
+          -- ^ List of compiled Heist slices.
+          -> [(T.Text, AttrSplice (SpliceT a))]
+          -- ^ List of Heist attribute slices.
           -> IO (HeistState (SpliceT a))
-loadHeist baseDir splices = do
+loadHeist baseDir a b = do
     tState <- runEitherT $ do
         templates <- loadTemplates baseDir
-        let splices' = [("hakyll", hakyllSplice)] ++ splices
-            attrs = [("url", urlAttrSplice)]
+        let splices' = [("hakyll", hakyllSplice)] ++ a
+            attrs = [("url", urlAttrSplice)] ++ b
             hc = HeistConfig [] defaultLoadTimeSplices splices' attrs templates
         initHeist hc
     either (error . concat) return tState
@@ -70,7 +74,7 @@ loadHeist baseDir splices = do
 -- | Load all of the templates from the given directory and return an
 -- initialized 'HeistState' with the default splices.
 loadDefaultHeist :: FilePath -> IO (HeistState (SpliceT a))
-loadDefaultHeist = (flip loadHeist) []
+loadDefaultHeist baseDir = loadHeist baseDir [] []
 
 --------------------------------------------------------------------------------
 -- | Apply a Heist template to a Hakyll 'Item'.  You need a

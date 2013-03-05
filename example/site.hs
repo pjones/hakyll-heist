@@ -46,7 +46,7 @@ main =
            route idRoute
            compile $ do
                let indexCtx = field "posts" $ \_ -> postList heist top3
-                   top3 = take 3 . recentFirst
+                   top3 = fmap (take 3) . recentFirst
 
                getResourceBody
                    >>= applyAsTemplate indexCtx
@@ -60,7 +60,7 @@ postCtx =
     defaultContext
 
 --------------------------------------------------------------------------------
-postList :: H.State String -> ([Item String] -> [Item String]) -> Compiler String
+postList :: H.State String -> ([Item String] -> Compiler [Item String]) -> Compiler String
 postList heist sortFilter = do
-    posts <- sortFilter <$> loadAll "posts/*"
+    posts <- sortFilter =<< loadAll "posts/*"
     H.applyTemplateList heist "post-item" postCtx posts
