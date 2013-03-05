@@ -134,10 +134,17 @@ hakyllSplice = do
 
 --------------------------------------------------------------------------------
 -- Attribute splice: changes a bare @url@ attribute to a complete
--- @href@ attribute using the URL from the current 'Context'.
+-- @href@ attribute using the URL from the current 'Context'.  While
+-- the default replacement attribute is @href@ this can be overridden
+-- by supplying a value for the @url@ attribute:
+--
+-- > <img url="src"/>
+--
+-- This function exists mostly to serve as an example for writing your
+-- own attribute splices.
 urlAttrSplice :: AttrSplice (SpliceT a)
-urlAttrSplice _ = do
+urlAttrSplice a = do
   (context, item) <- lift ask
   let url = unContext (context <> missingField) "url" item
   val <- lift $ lift $ liftM T.pack url
-  return $ ("href", val) : []
+  return $ (if T.null a then "href" else a, val) : []
