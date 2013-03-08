@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                hakyll-heist
-version:             0.1.1.0
+version:             0.2.0.0
 synopsis:            Heist templates for Hakyll
 -- description:         
 license:             BSD3

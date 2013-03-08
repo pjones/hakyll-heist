@@ -31,7 +31,7 @@ import           Control.Monad.Reader (ReaderT(..), ask)
 import           Control.Monad.Trans (lift)
 import           Data.ByteString (ByteString)
 import           Data.Monoid ((<>))
-import           Text.XmlHtml (elementAttrs)
+import           Text.XmlHtml (Node(..), elementAttrs)
 import           Data.ByteString.UTF8 (toString)
 import           Data.List (intersperse)
 import qualified Data.Text as T
@@ -43,7 +43,7 @@ import           Hakyll.Web.Template.Context
 
 --------------------------------------------------------------------------------
 import           Heist
-import qualified Heist.Compiled as C
+import qualified Heist.Interpreted as I
 
 --------------------------------------------------------------------------------
 type Content a = (Context a, Item a)
@@ -56,50 +56,49 @@ type State   a = HeistState (SpliceT a)
 -- the default splices and the @hakyll@ splice).
 loadHeist :: FilePath
           -- ^ Directory containing the templates.
-          -> [(T.Text, C.Splice (SpliceT a))]
+          -> [(T.Text, I.Splice (SpliceT a))]
           -- ^ List of compiled Heist slices.
           -> [(T.Text, AttrSplice (SpliceT a))]
           -- ^ List of Heist attribute slices.
-          -> IO (HeistState (SpliceT a))
+          -> IO (State a)
 loadHeist baseDir a b = do
     tState <- runEitherT $ do
         templates <- loadTemplates baseDir
         let splices' = [("hakyll", hakyllSplice)] ++ a
             attrs = [("url", urlAttrSplice)] ++ b
-            hc = HeistConfig [] defaultLoadTimeSplices splices' attrs templates
+            hc = HeistConfig splices' defaultLoadTimeSplices [] attrs templates
         initHeist hc
     either (error . concat) return tState
 
 --------------------------------------------------------------------------------
 -- | Load all of the templates from the given directory and return an
 -- initialized 'HeistState' with the default splices.
-loadDefaultHeist :: FilePath -> IO (HeistState (SpliceT a))
+loadDefaultHeist :: FilePath -> IO (State a)
 loadDefaultHeist baseDir = loadHeist baseDir [] []
 
 --------------------------------------------------------------------------------
 -- | Apply a Heist template to a Hakyll 'Item'.  You need a
 -- 'HeistState' from either the 'loadDefaultHeist' function or the
 -- 'loadHeist' function.
-applyTemplate :: HeistState (SpliceT a)  -- ^ HeistState
+applyTemplate :: State a                 -- ^ HeistState
               -> ByteString              -- ^ Template name
               -> Context a               -- ^ Context
               -> Item a                  -- ^ Page
               -> Compiler (Item String)  -- ^ Resulting item
 applyTemplate state name context item = do
-    case C.renderTemplate state name of
+    result <- runReaderT (I.renderTemplate state name) (context, item)
+    case result of
       Nothing    -> fail badTplError
-      Just (r,_) -> do builder <- runReaderT r (context, item)
-                       let body = toString $ toByteString builder
-                       return $ itemSetBody body item
+      Just (b,_) -> return $ itemSetBody (toString $ toByteString b) item
     where badTplError = "failed to render template: " ++ toString name
 
 --------------------------------------------------------------------------------
 -- | Render the given list of 'Item's with the given Heist template
 -- and return everything concatenated together.
-applyTemplateList :: HeistState (SpliceT a)  -- ^ HeistState
-                  -> ByteString
-                  -> Context a
-                  -> [Item a]
+applyTemplateList :: State a    -- ^ HeistState.
+                  -> ByteString -- ^ Template name.
+                  -> Context a  -- ^ Context.
+                  -> [Item a]   -- ^ List of items.
                   -> Compiler String
 applyTemplateList = applyJoinTemplateList ""
 
@@ -107,11 +106,11 @@ applyTemplateList = applyJoinTemplateList ""
 -- | Render the given list of 'Item's with the given Heist template.
 -- The content of the items is joined together using the given string
 -- delimiter.
-applyJoinTemplateList :: String
-                      -> HeistState (SpliceT a)  -- ^ HeistState
-                      -> ByteString
-                      -> Context a
-                      -> [Item a]
+applyJoinTemplateList :: String     -- ^ Delimiter.
+                      -> State a    -- ^ HeistState.
+                      -> ByteString -- ^ Template name.
+                      -> Context a  -- ^ Context.
+                      -> [Item a]   -- ^ List of items.
                       -> Compiler String
 applyJoinTemplateList delimiter state name context items = do
     items' <- mapM (applyTemplate state name context) items
@@ -120,17 +119,16 @@ applyJoinTemplateList delimiter state name context items = do
 --------------------------------------------------------------------------------
 -- Internal function to render the @hakyll@ splice given fields inside
 -- of a 'Context'.
-hakyllSplice :: C.Splice (SpliceT a)
+hakyllSplice :: I.Splice (SpliceT a)
 hakyllSplice = do
     node <- getParamNode
-    return $ C.yieldRuntimeText $ do
-        (context, item) <- lift ask
-        let context' f = unContext (context <> missingField) f item
-        case lookup "field" $ elementAttrs node of
-          Nothing -> fail fieldError
-          Just f  -> liftStr $ context' $ T.unpack f
+    (context, item) <- lift ask
+    let context' f = unContext (context <> missingField) f item
+    case lookup "field" $ elementAttrs node of
+      Nothing -> fail fieldError
+      Just f  -> do content <- lift $ lift $ context' $ T.unpack f
+                    return $ [TextNode $ T.pack content]
     where fieldError = "The `hakyll' splice is missing the `field' attribute"
-          liftStr s  = lift $ lift $ liftM T.pack s
 
 --------------------------------------------------------------------------------
 -- Attribute splice: changes a bare @url@ attribute to a complete
