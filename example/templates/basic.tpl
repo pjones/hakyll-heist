@@ -1,3 +1,3 @@
 <apply template="default">
-  <hakyll field="body"/>
+  <hakyll field="body" as="html"/>
 </apply>

@@ -30,10 +30,11 @@ import           Control.Monad (liftM)
 import           Control.Monad.Reader (ReaderT(..), ask)
 import           Control.Monad.Trans (lift)
 import           Data.ByteString (ByteString)
-import           Data.Monoid ((<>))
-import           Text.XmlHtml (Node(..), elementAttrs)
-import           Data.ByteString.UTF8 (toString)
+import           Data.ByteString.UTF8 (toString, fromString)
 import           Data.List (intersperse)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>))
+import           Text.XmlHtml
 import qualified Data.Text as T
 
 --------------------------------------------------------------------------------
@@ -127,8 +128,22 @@ hakyllSplice = do
     case lookup "field" $ elementAttrs node of
       Nothing -> fail fieldError
       Just f  -> do content <- lift $ lift $ context' $ T.unpack f
-                    return $ [TextNode $ T.pack content]
+                    lift $ lift $ renderField (elementAttrs node) content
     where fieldError = "The `hakyll' splice is missing the `field' attribute"
+
+--------------------------------------------------------------------------------
+renderField :: [(T.Text, T.Text)] -> String -> Compiler Template
+renderField attrs content =
+  case as of
+    "html" -> parse html
+    "xml"  -> parse xml
+    "text" -> return [TextNode $ T.pack content]
+    _      -> fail "the `as' attribute should be text, html, or xml"
+  where as    = fromMaybe "text" $ lookup "as" attrs
+        name  = "Hakyll field splice"
+        parse = either fail (return . docContent)
+        html  = parseHTML name (fromString content)
+        xml   = parseXML  name (fromString content)
 
 --------------------------------------------------------------------------------
 -- Attribute splice: changes a bare @url@ attribute to a complete
